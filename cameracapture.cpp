@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
     
     cv::namedWindow("input_img", CV_WINDOW_AUTOSIZE);
     cv::namedWindow("hsv_skin_img", CV_WINDOW_AUTOSIZE);
-    cv::namedWindow("contours_img", CV_WINDOW_AUTOSIZE);
+    //cv::namedWindow("contours_img", CV_WINDOW_AUTOSIZE);
 
     while(1)
     {
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
         //morphologyEx(hsv_skin_img, hsv_skin_img, MORPH_CLOSE, structElem);
 
         //距離変換 cv::Mat img(cv::Size(320, 240), CV_8UC3, cv::Scalar(0, 0, 255));
-        // (3)距離画像を計算し，表示用に結果を0-255に正規化する
+        //距離画像を計算し，表示用に結果を0-255に正規化する
         // convert Mat => IplImage*
         IplImage tmp_src_img = hsv_skin_img; 
         src_img = &tmp_src_img;
@@ -64,18 +64,27 @@ int main(int argc, char *argv[])
         dst_img_norm = cvCreateImage (cvSize (src_img->width, src_img->height), IPL_DEPTH_8U, 1);
         cvDistTransform (src_img, dst_img, CV_DIST_L2, 3, NULL, NULL);
         cvNormalize (dst_img, dst_img_norm, 0.0, 255.0, CV_MINMAX, NULL);
+        
+        Mat gray_dst_mat(dst_img_norm, true);
 
+        //cvtColor(gray_dst_mat, gray_dst_mat, CV_RGB2GRAY);
         // get countous
-        //findContours(hsv_skin_img, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
-
+        findContours(gray_dst_mat, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
+        int idx = 0;
+        for( ; idx >= 0; idx = hierarchy[idx][0] )
+        {
+            Scalar color(0,0,255);
+            drawContours( input_img, contours, idx, color, 1, 8, hierarchy );
+        }
         //findContours( gray, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
+        //imshow( "input_img", dst );
         cv::imshow("input_img",input_img);
         cv::imshow("hsv_skin_img",hsv_skin_img);
-         cvNamedWindow ("Source", CV_WINDOW_AUTOSIZE);
-  cvNamedWindow ("Distance Image", CV_WINDOW_AUTOSIZE);
-  cvShowImage ("Source", src_img);
-  cvShowImage ("Distance Image", dst_img_norm);
-        if(cv::waitKey(30) >=0)
+        cvNamedWindow ("Source", CV_WINDOW_AUTOSIZE);
+        cvNamedWindow ("Distance Image", CV_WINDOW_AUTOSIZE);
+        cvShowImage ("Source", src_img);
+        cvShowImage ("Distance Image", dst_img_norm);
+        if(cv::waitKey(30) == 'q')
         {
             break;
         }
