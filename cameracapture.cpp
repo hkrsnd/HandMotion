@@ -10,6 +10,18 @@ using namespace cv;
 #define F_WIDTH 460
 #define F_HEIGHT 640
 
+vector<Point> findMaxContour(vector<vector<Point> > contours) {
+    double maxarea = 0.0;
+    int maxconid = 0;
+    for (int i = 0; i < contours.size(); i++) {
+        if (contourArea(contours[i]) > maxarea) {
+            maxarea = contourArea(contours[i]);
+            maxconid = i;
+        }
+    }
+    return contours[maxconid];
+}
+
 int main(int argc, char *argv[])
 {
     cv::VideoCapture cap(0);
@@ -35,6 +47,7 @@ int main(int argc, char *argv[])
 
     //cv::Mat frame(Size(F_WIDTH, F_HEIGHT), IPL_DEPTH_8U);
     std::vector<vector<Point> > contours;
+    std::vector<Point> contour;
     std::vector<Vec4i> hierarchy;
     
     cv::namedWindow("input_img", CV_WINDOW_AUTOSIZE);
@@ -70,11 +83,15 @@ int main(int argc, char *argv[])
         //cvtColor(gray_dst_mat, gray_dst_mat, CV_RGB2GRAY);
         // get countous
         findContours(gray_dst_mat, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
-        int idx = 0;
-        for( ; idx >= 0; idx = hierarchy[idx][0] )
-        {
+
+        // getMaxAreaContour
+        if (contours.size() > 0){
+        contour = findMaxContour(contours);
+
             Scalar color(0,0,255);
-            drawContours( input_img, contours, idx, color, 1, 8, hierarchy );
+            vector<vector<Point> > con(1);
+            con[0] = contour;
+            drawContours( input_img, con, -1, color, 1, 8);
         }
         //findContours( gray, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
         //imshow( "input_img", dst );
