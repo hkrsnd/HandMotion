@@ -7,7 +7,7 @@
 using namespace std;
 using namespace cv;
 
-#define F_WIDTH 460
+#define F_WIDTH 900
 #define F_HEIGHT 640
 
 VideoCapture captureVideo() {
@@ -86,6 +86,11 @@ vector<Vec4i> findConvexityDefects(vector<Point> contour, vector<int> hullI) {
 
 // draw defecs points and line
 void drawDefects(vector<Point> hull, vector<Vec4i> defects, Mat input_img) {
+    // is detected flas of startpoint and endpoint
+    vector<bool> isdetected_start(defects.size(), false);
+    vector<bool> isdetected_end(defects.size(), false);
+    int fingerNumber = 0;
+
     for (int i = 0; i < defects.size(); i++) {
         Vec4i v = defects[i];
         int startidx = v[0];
@@ -96,14 +101,48 @@ void drawDefects(vector<Point> hull, vector<Vec4i> defects, Mat input_img) {
         Point ptFar(hull[faridx]);
         float depth = v[3] / 256;
 
-        if (depth > 15) {
-            line(input_img, ptStart, ptFar, CV_RGB(0,255,0));
-            line(input_img, ptEnd, ptFar, CV_RGB(0,255,0));
-            circle(input_img, ptStart, 4,  Scalar(0,0,255));
-            circle(input_img, ptEnd, 4,  Scalar(0,0,255));
+        if (depth > 20) {
+            fingerNumber++;
+            printf("%d\n", fingerNumber);
             circle(input_img, ptFar, 4,  Scalar(0,0,255));
+            /*
+            if (i == 0) {
+                line(input_img, ptStart, ptFar, CV_RGB(0,255,0)); isdetected_start[i] = true;
+                circle(input_img, ptStart, 4,  Scalar(0,0,255));
+                line(input_img, ptEnd, ptFar, CV_RGB(0,255,0)); isdetected_end[i] = true;
+                circle(input_img, ptEnd, 4,  Scalar(0,0,255));
+                circle(input_img, ptFar, 4,  Scalar(0,0,255));
+            } else if (i == defects.size()) {
+                line(input_img, ptEnd, ptFar, CV_RGB(0,255,0)); isdetected_end[i] = true;
+                circle(input_img, ptEnd, 4,  Scalar(0,0,255));
+                circle(input_img, ptFar, 4,  Scalar(0,0,255));
+            }
+            else if (isdetected_end[i-1] == false) {
+                line(input_img, ptStart, ptFar, CV_RGB(0,255,0)); isdetected_start[i] = true;
+                circle(input_img, ptStart, 4,  Scalar(0,0,255));
+            } 
+            else if (isdetected_start[i+1] == false) {
+                line(input_img, ptEnd, ptFar, CV_RGB(0,255,0)); isdetected_end[i] = true;
+                circle(input_img, ptEnd, 4,  Scalar(0,0,255));
+                circle(input_img, ptFar, 4,  Scalar(0,0,255));
+            }*/
         }
     }
+    printf("%d\n", fingerNumber);
+}
+
+Point findFingerPoint(vector<Point> hull, vector<Vec4i> defects) {
+    int maxdepth = 0;
+    int maxid = 0;
+    Point maxpoint;
+    for (int i = 0; i < defects.size(); i++) {
+       if (defects[i][3] > maxdepth) {
+           maxdepth = defects[i][3];
+           maxid = defects[i][1];
+           maxpoint = hull[maxid];
+       }
+    }
+    return maxpoint;
 }
 
 void createWindows() {
@@ -127,8 +166,6 @@ int main(int argc, char *argv[])
     Mat hsv_skin_img;
     Mat dst_mat;
     IplImage *dst_img;
-
-    // (2)処理結果の距離画像出力用の画像領域と表示ウィンドウを確保
 
     vector<vector<Point> > contours;
     vector<Point> contour;
@@ -176,6 +213,7 @@ int main(int argc, char *argv[])
             // find Convexity defects
             defects = findConvexityDefects(contour, hullI);
             drawDefects(contour, defects, input_img);
+            circle(input_img, findFingerPoint(contour, defects), 4,  Scalar(0,0,255), 2);
         }
 
         showImage(input_img, hsv_skin_img, dst_img);
